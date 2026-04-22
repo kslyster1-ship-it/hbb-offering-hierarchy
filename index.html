@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HBB Offering Hierarchy V3.1 — Digital Workplace Solutions</title>
+<style>
+  :root {
+    --pcsd: #3d1f52;
+    --mbg: #a78ab8;
+    --shared: #2e4bb8;
+    --bg: #f6f7fb;
+    --panel: #ffffff;
+    --border: #e4e6ef;
+    --muted: #6b7280;
+    --text: #1f2330;
+    --accent: #2e4bb8;
+    --hover: rgba(46, 75, 184, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 17px; margin: 0; color: #111; }
+  header h1 span { color: var(--accent); font-weight: 600; }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; }
+  .legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fafbfe;
+  }
+  .legend-swatch { width: 11px; height: 11px; border-radius: 3px; }
+
+  .layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    min-height: 0;
+  }
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .sidebar-top {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sidebar-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 6px 16px;
+  }
+  .main {
+    overflow-y: auto;
+    padding: 20px 26px;
+    min-height: 0;
+  }
+
+  .search {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    outline: none;
+  }
+  .search:focus { border-color: var(--accent); }
+  .filter-section { margin-top: 10px; }
+  .filter-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    user-select: none;
+    color: var(--muted);
+    transition: all 0.12s;
+  }
+  .chip-toggle.on {
+    background: #eef1fb;
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .chip-toggle .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block;
+  }
+  .btn-row { display: flex; gap: 6px; margin-top: 10px; }
+  .btn {
+    flex: 1;
+    padding: 5px 8px;
+    font-size: 11px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .tree-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 4px 10px 8px;
+  }
+  .tree-stats { font-size: 11px; color: var(--muted); padding: 0 10px 8px; }
+
+  .node.hidden { display: none; }
+  .node.closed > .children { display: none; }
+
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px 3px 4px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+  .tree-row:hover { background: var(--hover); }
+  .tree-row.selected {
+    background: #e6eafb;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    color: #8a8fa0;
+    font-size: 9px;
+    flex-shrink: 0;
+    transition: transform 0.12s;
+  }
+  .node.closed > .tree-row .arrow { transform: rotate(-90deg); }
+  .arrow-spacer { width: 14px; flex-shrink: 0; }
+
+  .label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .count {
+    font-size: 10px;
+    color: #9ca0b0;
+    font-variant-numeric: tabular-nums;
+    padding-left: 4px;
+  }
+
+  .l2-row .label { font-weight: 600; font-size: 13px; color: var(--accent); }
+  .l3-row .label { font-weight: 500; font-size: 12.5px; }
+  .l4-row .label { font-size: 12.5px; }
+
+  .type-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .type-dot[data-type="PCSD"]   { background: var(--pcsd); }
+  .type-dot[data-type="MBG"]    { background: var(--mbg); }
+  .type-dot[data-type="Shared"] { background: var(--shared); }
+
+  .indent-1 { padding-left: 12px; }
+  .indent-2 { padding-left: 28px; }
+  .indent-3 { padding-left: 46px; }
+
+  .empty-note {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    padding: 2px 0 2px 46px;
+  }
+
+  .main h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .detail-empty {
+    color: var(--muted);
+    font-size: 14px;
+    padding: 40px 24px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: #fff;
+  }
+  .detail-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 26px;
+    max-width: 720px;
+  }
+  .detail-name {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    line-height: 1.3;
+  }
+  .breadcrumb {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .breadcrumb .sep { margin: 0 8px; color: #c4c7d1; }
+  .breadcrumb .crumb-l2 { color: var(--accent); font-weight: 500; }
+  .breadcrumb .crumb-l4 { color: var(--text); font-weight: 600; }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 10px 16px;
+    align-items: center;
+    font-size: 13px;
+  }
+  .meta-grid .key { color: var(--muted); }
+
+  .badge-type {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 500;
+  }
+  .badge-type[data-type="PCSD"]   { background: var(--pcsd); }
+  .badge-type[data-type="MBG"]    { background: var(--mbg); }
+  .badge-type[data-type="Shared"] { background: var(--shared); }
+
+  .sidebar-tree::-webkit-scrollbar, .main::-webkit-scrollbar { width: 8px; }
+  .sidebar-tree::-webkit-scrollbar-thumb, .main::-webkit-scrollbar-thumb {
+    background: #d7dae5; border-radius: 4px;
+  }
+
+  @media (max-width: 820px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HBB Offering Hierarchy <span>V3.1 — Digital Workplace Solutions (DWS)</span></h1>
+  <div class="legend">
+    <span class="legend-chip"><span class="legend-swatch" style="background: var(--pcsd);"></span>PCSD</span>
+    <span class="legend-chip"><span class="legend-swatch" style="background: var(--mbg);"></span>MBG</span>
+    <span class="legend-chip"><span class="legend-swatch" style="background: var(--shared);"></span>Shared</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <input id="search" class="search" type="text" placeholder="Search offerings…" autocomplete="off" />
+
+      <div class="filter-section">
+        <div class="filter-label">Type</div>
+        <div class="chips" id="type-filters"></div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-label">L2 Category</div>
+        <div class="chips" id="l2-filters"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="expand-all">Expand all</button>
+        <button class="btn" id="collapse-all">Collapse all</button>
+      </div>
+    </div>
+
+    <div class="sidebar-tree">
+      <div class="tree-title">Hierarchy</div>
+      <div class="tree-stats" id="stats"></div>
+      <div id="tree"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <h2>Selected Offering</h2>
+    <div id="detail-body">
+      <div class="detail-empty">
+        Click an item in the left navigation to see its details.<br/>
+        Use the chevrons ▶/▼ to expand or collapse categories.
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+// ---------- Data ----------
+const DATA = [
+  // Managed & Professional Services
+  { l2: "Managed & Professional Services", l3: "Advisory & Planning", l4: "Consultancy", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Persona based Configuration & Experience", l4: "LDI Plus Managed Services", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Persona based Configuration & Experience", l4: "3rd Party Configuration & Deployment", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Persona based Configuration & Experience", l4: "Care of One Platform", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "M365 Back Up", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "M365 Support", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "M365 Security", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "M365 Migration", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "Win 11 POC", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "M365 Token", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "TruScale Meeting Room as a Service", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "M365 Copilot", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "TruScale WorkSmart", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Collaboration & Productivity", l4: "Google Services", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Security Services", l4: "CRaaS - Data Protection", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Security Services", l4: "CRaaS - Absolute", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Security Services", l4: "CRaaS - Microsoft", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Security Services", l4: "CRaaS – Sentinel One", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Security Services", l4: "CRaaS – Custom", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Security Services", l4: "CRaaS – CriticalStart", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Service Desk", l4: "Service Desk", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Service Desk", l4: "Custom Service Desk", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Field Service", l4: "Field Service", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "DaaS - Device as a Service", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "SAM", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "Service Delivery Resource", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "Managed 3 Party Procurement", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "DaaS HW Lenovo", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "DaaS HW 3PO", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "Custom Managed Services (SOW)", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "Application Management", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "Hosting Infrastructure Services", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "Network & Endpoint Outsourcing", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Lifecycle Services", l4: "ServiceNow", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Unified Endpoint Management", l4: "UEM Migration", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Unified Endpoint Management", l4: "Endpoint Management", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Global Smart Support Solutions", l4: "Smart Vending Machines", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Global Smart Support Solutions", l4: "Smart BPO", type: "PCSD" },
+  { l2: "Managed & Professional Services", l3: "Global Smart Support Solutions", l4: "Smart Lockers", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "NEC Managed", l4: "NEC Managed", type: "PCSD" },
+
+  { l2: "Managed & Professional Services", l3: "Support Contracts", l4: "Licensed Products Services", type: "MBG" },
+  { l2: "Managed & Professional Services", l3: "Support Contracts", l4: "Insurance Claim Administration", type: "MBG" },
+
+  // Software & Cloud Services
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Absolute", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "LDI", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "LDI Plus", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Ivanti", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Blancco", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "SentinelOne", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "LDM", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Veeam", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Eclypsium", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Open Text", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield Security", l4: "Cigent", type: "PCSD" },
+
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "Google", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "Stoneware", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "Lenovo Smart Performance", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "ThinkSmart Manager", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "IGEL", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "McAfee", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "Microsoft Office", type: "Shared" },
+  { l2: "Software & Cloud Services", l3: "Core Software", l4: "Lenovo Smart Lock", type: "Shared" },
+
+  { l2: "Software & Cloud Services", l3: "CSP", l4: "Microsoft Cloud (CSP)", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "CSP", l4: "Google Workspace", type: "PCSD" },
+  { l2: "Software & Cloud Services", l3: "CSP", l4: "AvePoint", type: "PCSD" },
+
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Mobile Device Manager", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Moto Essentials", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Moto Talk", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Moto Safe", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Moto Remote Control", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Mobile Threat Defense", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Kiosk Mode", type: "MBG" },
+  { l2: "Software & Cloud Services", l3: "ThinkShield for Mobile", l4: "Other Software", type: "MBG" },
+
+  // DaaS HW — parallel L2 (listed separately but has no L4 items in the source diagram)
+  { l2: "DaaS HW", l3: "Lenovo HW", l4: null, type: "PCSD" },
+  { l2: "DaaS HW", l3: "3PO HW", l4: null, type: "PCSD" },
+];
+
+const L2_ORDER = ["Managed & Professional Services", "Software & Cloud Services", "DaaS HW"];
+const L3_ORDER = [
+  "Advisory & Planning",
+  "Persona based Configuration & Experience",
+  "Collaboration & Productivity",
+  "Security Services",
+  "Service Desk",
+  "Field Service",
+  "Lifecycle Services",
+  "Unified Endpoint Management",
+  "Global Smart Support Solutions",
+  "NEC Managed",
+  "Support Contracts",
+  "ThinkShield Security",
+  "Core Software",
+  "CSP",
+  "ThinkShield for Mobile",
+  "Lenovo HW",
+  "3PO HW",
+];
+const TYPES = ["PCSD", "MBG", "Shared"];
+const TYPE_LABEL = { PCSD: "Dedicated PCSD", MBG: "Dedicated MBG", Shared: "Shared" };
+
+// ---------- State ----------
+const state = {
+  search: "",
+  types: new Set(TYPES),
+  l2s: new Set(L2_ORDER),
+  selected: null,
+};
+
+// ---------- Build hierarchy ----------
+function buildTree(data) {
+  const tree = {};
+  for (const row of data) {
+    if (!tree[row.l2]) tree[row.l2] = {};
+    if (!tree[row.l2][row.l3]) tree[row.l2][row.l3] = [];
+    if (row.l4) tree[row.l2][row.l3].push(row);
+  }
+  return tree;
+}
+const TREE = buildTree(DATA);
+
+// ---------- Render sidebar filters ----------
+function renderFilters() {
+  const typeBox = document.getElementById("type-filters");
+  typeBox.innerHTML = "";
+  for (const t of TYPES) {
+    const count = DATA.filter(d => d.l4 && d.type === t).length;
+    const b = document.createElement("button");
+    b.className = "chip-toggle on";
+    b.dataset.type = t;
+    b.innerHTML = `<span class="dot" style="background: var(--${t.toLowerCase()});"></span>${TYPE_LABEL[t]} (${count})`;
+    typeBox.appendChild(b);
+  }
+
+  const l2Box = document.getElementById("l2-filters");
+  l2Box.innerHTML = "";
+  for (const l2 of L2_ORDER) {
+    const count = DATA.filter(d => d.l4 && d.l2 === l2).length;
+    const b = document.createElement("button");
+    b.className = "chip-toggle on";
+    b.dataset.l2 = l2;
+    b.textContent = `${l2} (${count})`;
+    l2Box.appendChild(b);
+  }
+}
+
+// ---------- Render tree ----------
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+  );
+}
+
+function renderTree() {
+  const root = document.getElementById("tree");
+  root.innerHTML = "";
+  for (const l2 of L2_ORDER) {
+    if (!TREE[l2]) continue;
+    const l2Node = document.createElement("div");
+    l2Node.className = "node l2-node";
+    l2Node.dataset.l2 = l2;
+
+    const l3Names = Object.keys(TREE[l2]).sort((a, b) => L3_ORDER.indexOf(a) - L3_ORDER.indexOf(b));
+    const l2Count = l3Names.reduce((sum, l3) => sum + TREE[l2][l3].length, 0);
+
+    const l2Row = document.createElement("div");
+    l2Row.className = "tree-row l2-row indent-1";
+    l2Row.innerHTML = `
+      <span class="arrow">▼</span>
+      <span class="label">${esc(l2)}</span>
+      <span class="count">${l2Count}</span>
+    `;
+    l2Node.appendChild(l2Row);
+
+    const l2Children = document.createElement("div");
+    l2Children.className = "children";
+
+    for (const l3 of l3Names) {
+      const l3Items = TREE[l2][l3];
+      const l3Node = document.createElement("div");
+      l3Node.className = "node l3-node";
+      l3Node.dataset.l3 = l3;
+      if (l3Items.length === 0) l3Node.dataset.empty = "true";
+
+      const l3Row = document.createElement("div");
+      l3Row.className = "tree-row l3-row indent-2";
+      l3Row.innerHTML = `
+        <span class="arrow">▼</span>
+        <span class="label">${esc(l3)}</span>
+        <span class="count">${l3Items.length}</span>
+      `;
+      l3Node.appendChild(l3Row);
+
+      const l3Children = document.createElement("div");
+      l3Children.className = "children";
+
+      if (l3Items.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-note";
+        empty.textContent = "(no offerings listed)";
+        l3Children.appendChild(empty);
+      } else {
+        for (const item of l3Items) {
+          const row = document.createElement("div");
+          row.className = "tree-row l4-row indent-3";
+          row.dataset.type = item.type;
+          row.dataset.l4 = item.l4;
+          row.dataset.l3 = item.l3;
+          row.dataset.l2 = item.l2;
+          row.innerHTML = `
+            <span class="arrow-spacer"></span>
+            <span class="type-dot" data-type="${item.type}"></span>
+            <span class="label">${esc(item.l4)}</span>
+          `;
+          l3Children.appendChild(row);
+        }
+      }
+
+      l3Node.appendChild(l3Children);
+      l2Children.appendChild(l3Node);
+    }
+
+    l2Node.appendChild(l2Children);
+    root.appendChild(l2Node);
+  }
+}
+
+// ---------- Filters ----------
+function matchesSearch(item, q) {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  return (
+    item.l4.toLowerCase().includes(needle) ||
+    item.l3.toLowerCase().includes(needle) ||
+    item.l2.toLowerCase().includes(needle)
+  );
+}
+
+function applyFilters() {
+  const q = state.search.trim();
+  let visibleTotal = 0;
+
+  const l2Nodes = document.querySelectorAll(".l2-node");
+  for (const l2Node of l2Nodes) {
+    const l2 = l2Node.dataset.l2;
+    const l2Pass = state.l2s.has(l2);
+    let l2HasVisible = false;
+
+    const l3Nodes = l2Node.querySelectorAll(".l3-node");
+    for (const l3Node of l3Nodes) {
+      let l3HasVisible = false;
+      const rows = l3Node.querySelectorAll(".l4-row");
+      for (const row of rows) {
+        const type = row.dataset.type;
+        const item = {
+          l2: row.dataset.l2,
+          l3: row.dataset.l3,
+          l4: row.dataset.l4,
+        };
+        const pass =
+          l2Pass &&
+          state.types.has(type) &&
+          matchesSearch(item, q);
+
+        row.classList.toggle("hidden", !pass);
+        if (pass) {
+          l3HasVisible = true;
+          visibleTotal++;
+        }
+      }
+
+      // Empty L3 (no L4 items) stays visible if its L2 is enabled and there's no active search
+      const isEmpty = l3Node.dataset.empty === "true";
+      const keepEmpty = isEmpty && l2Pass && !q;
+
+      l3Node.classList.toggle("hidden", !l3HasVisible && !keepEmpty);
+      if (l3HasVisible || keepEmpty) l2HasVisible = true;
+      if (q && l3HasVisible) l3Node.classList.remove("closed");
+    }
+
+    l2Node.classList.toggle("hidden", !l2HasVisible);
+    if (q && l2HasVisible) l2Node.classList.remove("closed");
+  }
+
+  document.getElementById("stats").textContent =
+    visibleTotal + " / " + DATA.filter(d => d.l4).length + " offerings visible";
+}
+
+// ---------- Detail pane ----------
+function renderDetail() {
+  const body = document.getElementById("detail-body");
+  const sel = state.selected;
+  if (!sel) {
+    body.innerHTML = `<div class="detail-empty">
+      Click an item in the left navigation to see its details.<br/>
+      Use the chevrons ▶/▼ to expand or collapse categories.
+    </div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div class="detail-card">
+      <div class="detail-name">${esc(sel.l4)}</div>
+      <div class="breadcrumb">
+        <span class="crumb-l2">${esc(sel.l2)}</span>
+        <span class="sep">›</span>
+        <span>${esc(sel.l3)}</span>
+        <span class="sep">›</span>
+        <span class="crumb-l4">${esc(sel.l4)}</span>
+      </div>
+      <div class="meta-grid">
+        <span class="key">Ownership type</span>
+        <span><span class="badge-type" data-type="${sel.type}">${TYPE_LABEL[sel.type]}</span></span>
+
+        <span class="key">L2 Category</span>
+        <span>${esc(sel.l2)}</span>
+
+        <span class="key">L3 Domain</span>
+        <span>${esc(sel.l3)}</span>
+
+        <span class="key">L4 Offering</span>
+        <span>${esc(sel.l4)}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- Wire up ----------
+function wire() {
+  document.getElementById("search").addEventListener("input", (e) => {
+    state.search = e.target.value;
+    applyFilters();
+  });
+
+  const toggleChip = (btn, collection, key) => {
+    const v = btn.dataset[key];
+    if (!v) return;
+    const on = btn.classList.toggle("on");
+    if (on) collection.add(v); else collection.delete(v);
+    applyFilters();
+  };
+
+  document.getElementById("type-filters").addEventListener("click", (e) => {
+    const btn = e.target.closest(".chip-toggle");
+    if (btn) toggleChip(btn, state.types, "type");
+  });
+  document.getElementById("l2-filters").addEventListener("click", (e) => {
+    const btn = e.target.closest(".chip-toggle");
+    if (btn) toggleChip(btn, state.l2s, "l2");
+  });
+
+  document.getElementById("expand-all").addEventListener("click", () => {
+    document.querySelectorAll(".node").forEach(n => n.classList.remove("closed"));
+  });
+  document.getElementById("collapse-all").addEventListener("click", () => {
+    document.querySelectorAll(".node").forEach(n => n.classList.add("closed"));
+  });
+
+  document.getElementById("tree").addEventListener("click", (e) => {
+    const l4 = e.target.closest(".l4-row");
+    if (l4) {
+      document.querySelectorAll(".tree-row.selected").forEach(r => r.classList.remove("selected"));
+      l4.classList.add("selected");
+      state.selected = {
+        l2: l4.dataset.l2,
+        l3: l4.dataset.l3,
+        l4: l4.dataset.l4,
+        type: l4.dataset.type,
+      };
+      renderDetail();
+      return;
+    }
+    const row = e.target.closest(".l2-row, .l3-row");
+    if (row) {
+      const node = row.parentElement;
+      node.classList.toggle("closed");
+    }
+  });
+}
+
+// ---------- Init ----------
+renderFilters();
+renderTree();
+applyFilters();
+wire();
+</script>
+
+</body>
+</html>
