@@ -281,6 +281,76 @@
   .badge-type[data-type="MBG"]    { background: var(--mbg); }
   .badge-type[data-type="Shared"] { background: var(--shared); }
 
+  /* Right-pane group view (L2 / L3 selected) */
+  .group-header {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    line-height: 1.25;
+  }
+  .group-sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .group-sub .crumb-l2 { color: var(--accent); font-weight: 500; }
+  .group-sub .sep { margin: 0 6px; color: #c4c7d1; }
+
+  .l3-section { margin-bottom: 22px; }
+  .l3-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .l3-section-head .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .l3-section-head .n {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .tile {
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
+    border: 2px solid transparent;
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  .tile:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+  .tile[data-type="PCSD"]   { background: var(--pcsd); }
+  .tile[data-type="MBG"]    { background: var(--mbg); }
+  .tile[data-type="Shared"] { background: var(--shared); }
+
+  .empty-tile {
+    padding: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    background: #fafbfe;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+  }
+
   .sidebar-tree::-webkit-scrollbar, .main::-webkit-scrollbar { width: 8px; }
   .sidebar-tree::-webkit-scrollbar-thumb, .main::-webkit-scrollbar-thumb {
     background: #d7dae5; border-radius: 4px;
@@ -465,6 +535,7 @@ const TYPES = ["PCSD", "MBG", "Shared"];
 const TYPE_LABEL = { PCSD: "Dedicated PCSD", MBG: "Dedicated MBG", Shared: "Shared" };
 
 // ---------- State ----------
+// selected shape: { level: "L2"|"L3"|"L4", l2, l3?, l4?, type? }
 const state = {
   search: "",
   types: new Set(TYPES),
@@ -652,17 +723,12 @@ function applyFilters() {
 }
 
 // ---------- Detail pane ----------
-function renderDetail() {
-  const body = document.getElementById("detail-body");
-  const sel = state.selected;
-  if (!sel) {
-    body.innerHTML = `<div class="detail-empty">
-      Click an item in the left navigation to see its details.<br/>
-      Use the chevrons ▶/▼ to expand or collapse categories.
-    </div>`;
-    return;
-  }
-  body.innerHTML = `
+function tileHTML(item) {
+  return `<div class="tile" data-type="${item.type}" data-l2="${esc(item.l2)}" data-l3="${esc(item.l3)}" data-l4="${esc(item.l4)}">${esc(item.l4)}</div>`;
+}
+
+function renderL4Detail(sel) {
+  return `
     <div class="detail-card">
       <div class="detail-name">${esc(sel.l4)}</div>
       <div class="breadcrumb">
@@ -687,6 +753,73 @@ function renderDetail() {
       </div>
     </div>
   `;
+}
+
+function renderL3View(sel) {
+  const items = (TREE[sel.l2] && TREE[sel.l2][sel.l3]) || [];
+  const tiles = items.length
+    ? `<div class="tile-grid">${items.map(tileHTML).join("")}</div>`
+    : `<div class="empty-tile">No offerings listed under this category.</div>`;
+  return `
+    <div class="group-header">
+      <h3 class="group-title">${esc(sel.l3)}</h3>
+      <div class="group-sub">
+        <span class="crumb-l2">${esc(sel.l2)}</span>
+        <span class="sep">›</span>
+        <span>${esc(sel.l3)}</span>
+        <span class="sep">·</span>
+        <span>${items.length} offering${items.length === 1 ? "" : "s"}</span>
+      </div>
+    </div>
+    ${tiles}
+  `;
+}
+
+function renderL2View(sel) {
+  const l3Map = TREE[sel.l2] || {};
+  const l3Names = Object.keys(l3Map).sort((a, b) => L3_ORDER.indexOf(a) - L3_ORDER.indexOf(b));
+  const totalItems = l3Names.reduce((s, n) => s + l3Map[n].length, 0);
+  const sections = l3Names.map(l3 => {
+    const items = l3Map[l3];
+    const tiles = items.length
+      ? `<div class="tile-grid">${items.map(tileHTML).join("")}</div>`
+      : `<div class="empty-tile">No offerings listed under this category.</div>`;
+    return `
+      <div class="l3-section">
+        <div class="l3-section-head">
+          <span class="name">${esc(l3)}</span>
+          <span class="n">${items.length}</span>
+        </div>
+        ${tiles}
+      </div>
+    `;
+  }).join("");
+  return `
+    <div class="group-header">
+      <h3 class="group-title">${esc(sel.l2)}</h3>
+      <div class="group-sub">
+        <span>${l3Names.length} categor${l3Names.length === 1 ? "y" : "ies"}</span>
+        <span class="sep">·</span>
+        <span>${totalItems} offering${totalItems === 1 ? "" : "s"}</span>
+      </div>
+    </div>
+    ${sections}
+  `;
+}
+
+function renderDetail() {
+  const body = document.getElementById("detail-body");
+  const sel = state.selected;
+  if (!sel) {
+    body.innerHTML = `<div class="detail-empty">
+      Click a category or offering in the left navigation.<br/>
+      The chevron ▶/▼ toggles expand/collapse; the label shows its contents here.
+    </div>`;
+    return;
+  }
+  if (sel.level === "L4") body.innerHTML = renderL4Detail(sel);
+  else if (sel.level === "L3") body.innerHTML = renderL3View(sel);
+  else body.innerHTML = renderL2View(sel);
 }
 
 // ---------- Wire up ----------
@@ -720,25 +853,82 @@ function wire() {
     document.querySelectorAll(".node").forEach(n => n.classList.add("closed"));
   });
 
+  const selectNode = (row, sel) => {
+    document.querySelectorAll(".tree-row.selected").forEach(r => r.classList.remove("selected"));
+    row.classList.add("selected");
+    state.selected = sel;
+    renderDetail();
+  };
+
   document.getElementById("tree").addEventListener("click", (e) => {
+    // Arrow click → toggle collapse only
+    const arrow = e.target.closest(".arrow");
+    if (arrow) {
+      const row = arrow.closest(".tree-row");
+      const node = row && row.parentElement;
+      if (node && (node.classList.contains("l2-node") || node.classList.contains("l3-node"))) {
+        node.classList.toggle("closed");
+        return;
+      }
+    }
+
+    // L4 click → select and show detail
     const l4 = e.target.closest(".l4-row");
     if (l4) {
-      document.querySelectorAll(".tree-row.selected").forEach(r => r.classList.remove("selected"));
-      l4.classList.add("selected");
-      state.selected = {
+      selectNode(l4, {
+        level: "L4",
         l2: l4.dataset.l2,
         l3: l4.dataset.l3,
         l4: l4.dataset.l4,
         type: l4.dataset.type,
-      };
-      renderDetail();
+      });
       return;
     }
-    const row = e.target.closest(".l2-row, .l3-row");
-    if (row) {
-      const node = row.parentElement;
-      node.classList.toggle("closed");
+
+    // L3 row click (not arrow) → select and show grid in right pane
+    const l3 = e.target.closest(".l3-row");
+    if (l3) {
+      const node = l3.parentElement;
+      node.classList.remove("closed"); // auto-expand on select
+      selectNode(l3, {
+        level: "L3",
+        l2: l3.closest(".l2-node").dataset.l2,
+        l3: node.dataset.l3,
+      });
+      return;
     }
+
+    // L2 row click (not arrow) → select and show grouped view
+    const l2 = e.target.closest(".l2-row");
+    if (l2) {
+      const node = l2.parentElement;
+      node.classList.remove("closed"); // auto-expand on select
+      selectNode(l2, {
+        level: "L2",
+        l2: node.dataset.l2,
+      });
+      return;
+    }
+  });
+
+  // Clicking a tile in the right pane drills down to L4 detail
+  document.getElementById("detail-body").addEventListener("click", (e) => {
+    const tile = e.target.closest(".tile");
+    if (!tile) return;
+    const l2 = tile.dataset.l2, l3 = tile.dataset.l3, l4 = tile.dataset.l4;
+    const item = DATA.find(d => d.l2 === l2 && d.l3 === l3 && d.l4 === l4);
+    if (!item) return;
+    // Also highlight the matching L4 row in the tree (and expand ancestors)
+    const treeRow = document.querySelector(`.l4-row[data-l2="${CSS.escape(l2)}"][data-l3="${CSS.escape(l3)}"][data-l4="${CSS.escape(l4)}"]`);
+    if (treeRow) {
+      treeRow.closest(".l2-node").classList.remove("closed");
+      treeRow.closest(".l3-node").classList.remove("closed");
+      document.querySelectorAll(".tree-row.selected").forEach(r => r.classList.remove("selected"));
+      treeRow.classList.add("selected");
+      treeRow.scrollIntoView({ block: "nearest" });
+    }
+    state.selected = { level: "L4", l2: item.l2, l3: item.l3, l4: item.l4, type: item.type };
+    renderDetail();
   });
 }
 
